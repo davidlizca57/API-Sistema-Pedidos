@@ -1,27 +1,15 @@
 const express = require("express");
-const mysql = require("mysql2");
+const productosRoutes = require('./routes/productosRoutes');
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
 
-// Conexión a MySQL
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'root1234',
-    database: 'sistema_pedidos',
-    port: 3306
-});
+// 🔌 Conexión centralizada a MySQL (Importada limpiamente desde tu carpeta config)
+const db = require('./config/db');
 
-db.connect((err) => {
-    if (err) {
-        console.error('Error conectando a MySQL:', err);
-        return;
-    }
-    console.log('¡Conectado con éxito a la base de datos MySQL!');
-});
+// --- MÓDULO DE USUARIOS ---
 
 // 1. LEER TODOS (GET)
 app.get("/api/usuarios", (req, res) => {
@@ -31,11 +19,10 @@ app.get("/api/usuarios", (req, res) => {
     });
 });
 
-// 2. REGISTRO DE USUARIOS (POST) - Con Validación Básica
+// 2. REGISTRO DE USUARIOS (POST)
 app.post("/api/usuarios", (req, res) => {
     const { nombre, correo, password, rol } = req.body;
 
-    // Validación de entrada
     if (!nombre || !correo || !password) {
         return res.status(400).json({ error: 'Todos los campos (nombre, correo, password) son obligatorios' });
     }
@@ -52,7 +39,7 @@ app.post("/api/usuarios", (req, res) => {
     });
 });
 
-// 3. INICIO DE SESIÓN / LOGIN (POST) - Requisito EV03
+// 3. INICIO DE SESIÓN / LOGIN (POST)
 app.post("/api/usuarios/login", (req, res) => {
     const { correo, password } = req.body;
 
@@ -94,6 +81,11 @@ app.delete("/api/usuarios/:id", (req, res) => {
         res.json({ mensaje: 'Usuario eliminado correctamente' });
     });
 });
+
+
+// --- MÓDULO DE PRODUCTOS ---
+app.use('/api', productosRoutes);
+
 
 app.listen(PORT, () => {
     console.log(`Servidor ejecutándose en http://localhost:${PORT}`);

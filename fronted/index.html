@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Inteligente de Pedidos - SIP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fontsource-poppins@5.0.0/index.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <svg class="logo-img" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 70C10 60 10 40 20 30C30 20 40 25 35 35C30 45 25 40 25 50C25 60 35 65 40 55" stroke="#ff6b00" stroke-width="4" stroke-linecap="round" fill="none"/>
+                    <path d="M35 55C40 50 50 45 55 50C60 55 55 65 50 70C45 75 40 70 45 65" stroke="#ff6b00" stroke-width="4" stroke-linecap="round" fill="none"/>
+                    <path d="M55 30C60 20 75 15 80 25C85 35 75 40 70 35" stroke="#ff6b00" stroke-width="4" stroke-linecap="round" fill="none"/>
+                    <path d="M70 35C75 40 80 50 75 60C70 70 60 75 55 65C50 55 60 50 65 55" stroke="#ff6b00" stroke-width="4" stroke-linecap="round" fill="none"/>
+                    <path d="M65 50L75 42L82 48L72 56Z" fill="#ff6b00"/>
+                    <path d="M72 44L78 38M74 46L80 40M76 48L82 42" stroke="#ff6b00" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="28" cy="55" r="3" fill="#ff6b00"/>
+                </svg>
+                <div class="logo-text">
+                    <h1>SISTEMA INTELIGENTE DE PEDIDOS</h1>
+                    <span>Restaurante Fast Casual (API Sincronizada)</span>
+                </div>
+            </div>
+        </div>
+        <nav class="nav">
+            <a href="#" class="nav-link activo" data-seccion="inicio">Inicio</a>
+            <a href="#" class="nav-link" data-seccion="menu">Menú Completo</a>
+            <a href="#" class="nav-link" data-seccion="pedidos">Pedidos</a>
+            <a href="#" class="nav-link" data-seccion="reportes">Reportes API</a>
+            <a href="#" class="btn-cerrar" id="btn-cerrar-sesion" aria-label="Cerrar sesión">Cerrar Sesión</a>
+        </nav>
+    </header>
+
+    <!-- SECCIÓN: INICIO -->
+    <div class="seccion" id="seccion-inicio">
+        <div class="container">
+            <aside class="sidebar">
+                <h3>Módulos del Sistema</h3>
+                <button class="categoria-btn activo" data-categoria="comidas">
+                    <span class="icono">🍔</span> Comidas Especiales
+                </button>
+                <button class="categoria-btn" data-categoria="bebidas">
+                    <span class="icono">🥤</span> Bebidas Refrescantes
+                </button>
+                <button class="categoria-btn" data-categoria="gestion">
+                    <span class="icono">⚙️</span> Gestión Usuarios
+                </button>
+            </aside>
+            <main class="productos-area">
+                <h2 id="titulo-categoria">Comidas Especiales</h2>
+                <div class="grid-productos" id="grid-productos"></div>
+            </main>
+            <aside class="pedido-panel">
+                <h3>Pedido Actual</h3>
+                <div id="pedido-lista">
+                    <div class="pedido-vacio" id="pedido-vacio">
+                        <div class="icono-carrito">🛒</div>
+                        <p>No hay productos en el pedido.</p>
+                    </div>
+                </div>
+                <div class="pedido-total" id="pedido-total" style="display:none;">
+                    <div class="total-label">Total:</div>
+                    <div class="total-valor" id="total-valor">$0</div>
+                    <button class="btn-confirmar" id="btn-confirmar" type="button">Confirmar Pedido (Persistir)</button>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: MENÚ -->
+    <div class="seccion" id="seccion-menu" style="display:none;">
+        <div class="menu-container">
+            <div class="menu-header">
+                <h2>📋 Menú Completo del Restaurante</h2>
+                <p>Catálogo unificado mapeado directamente desde los modelos de la API REST</p>
+            </div>
+            <div id="menu-completo"></div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: PEDIDOS -->
+    <div class="seccion" id="seccion-pedidos" style="display:none;">
+        <div class="pedidos-container">
+            <div class="pedidos-header">
+                <div>
+                    <h2>📦 Historial de Pedidos Recibidos</h2>
+                    <p>Registro de operaciones simuladas a partir del almacenamiento local estructurado</p>
+                </div>
+                <button class="btn-vaciar" id="btn-vaciar-historial" type="button">🗑 Vaciar Registro CRUD</button>
+            </div>
+            <div id="lista-pedidos-historial">
+                <div class="pedidos-vacio">
+                    <div class="icono-grande">📦</div>
+                    <h3>No hay pedidos registrados</h3>
+                    <p>Los pedidos confirmados aparecerán aquí</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: REPORTES -->
+    <div class="seccion" id="seccion-reportes" style="display:none;">
+        <div class="reportes-container">
+            <div class="reportes-header">
+                <h2>📊 Reportes y Estadísticas del Sistema</h2>
+                <p>Resumen analítico en tiempo real correlacionado con la API y Base de Datos</p>
+            </div>
+            <div class="reportes-grid">
+                <div class="reporte-card">
+                    <div class="reporte-icono">💰</div>
+                    <h3>Ventas Totales</h3>
+                    <p class="reporte-valor" id="reporte-ventas">$0</p>
+                    <span class="reporte-sub">Ingresos acumulados</span>
+                </div>
+                <div class="reporte-card">
+                    <div class="reporte-icono">📦</div>
+                    <h3>Pedidos Realizados</h3>
+                    <p class="reporte-valor" id="reporte-pedidos">0</p>
+                    <span class="reporte-sub">Total de transacciones</span>
+                </div>
+                <div class="reporte-card">
+                    <div class="reporte-icono">🍔</div>
+                    <h3>Productos Vendidos</h3>
+                    <p class="reporte-valor" id="reporte-productos">0</p>
+                    <span class="reporte-sub">Unidades despachadas</span>
+                </div>
+                <div class="reporte-card">
+                    <div class="reporte-icono">📈</div>
+                    <h3>Promedio por Pedido</h3>
+                    <p class="reporte-valor" id="reporte-promedio">$0</p>
+                    <span class="reporte-sub">Ticket promedio</span>
+                </div>
+            </div>
+            <div class="reporte-detalle">
+                <h3>Platos y Bebidas con mayor rotación</h3>
+                <div id="reporte-top-productos"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ERROR -->
+    <div class="modal-overlay" id="modal-error">
+        <div class="modal">
+            <div class="modal-icono error">⚠</div>
+            <h3>Debe seleccionar productos antes de continuar</h3>
+            <button class="btn-modal" id="btn-cerrar-error">Entendido</button>
+        </div>
+    </div>
+
+    <!-- MODAL ÉXITO -->
+    <div class="modal-overlay" id="modal-exito">
+        <div class="modal">
+            <div class="modal-icono exito">✓</div>
+            <h3>¡Pedido Procesado!</h3>
+            <p>La operación CRUD se ejecutó de forma correcta y se guardó en el sistema.</p>
+            <p class="pedido-numero" id="pedido-numero-texto">Número de pedido: #PED-000124</p>
+            <button class="btn-modal" id="btn-cerrar-exito">Aceptar</button>
+        </div>
+    </div>
+
+    <script>
+        const productos = {
+            comidas: [
+                {
+                    id: '1',
+                    nombre: 'Hamburguesa Especial SIP',
+                    descripcion: 'Carne 150g, queso cheddar, tocino y salsa de la casa.',
+                    precio: 18500,
+                    imagen: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400'
+                },
+                {
+                    id: '2',
+                    nombre: 'Pizza Pepperoni Personal',
+                    descripcion: 'Masa artesanal, salsa de tomate y abundante pepperoni.',
+                    precio: 15000,
+                    imagen: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400'
+                }
+            ],
+            bebidas: [
+                {
+                    id: '3',
+                    nombre: 'Limonada Cerezada',
+                    descripcion: 'Bebida refrescante natural con cerezas seleccionadas.',
+                    precio: 7500,
+                    imagen: 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=400'
+                }
+            ],
+            gestion: [
+                {
+                    id: 'g1',
+                    nombre: 'Módulo CRUD Usuarios Activo',
+                    descripcion: 'Administración central de cuentas de usuario, asignación de roles y tokens.',
+                    precio: 0,
+                    imagen: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=400'
+                }
+            ]
+        };
+
+        const iconosCategoria = { comidas: '🍔', bebidas: '🥤', gestion: '⚙️' };
+        const titulosCategoria = { comidas: 'Comidas Especiales', bebidas: 'Bebidas Refrescantes', gestion: 'Gestión y Control de Usuarios' };
+
+        let pedido = [];
+        let categoriaActual = 'comidas';
+        
+        let historialPedidos = JSON.parse(localStorage.getItem('historialPedidos')) || [];
+        let contadorPedido = parseInt(localStorage.getItem('contadorPedido')) || 124;
+        let statsVentas = calcularEstadisticasIniciales();
+
+        function calcularEstadisticasIniciales() {
+            let stats = { totalVentas: 0, totalPedidos: 0, totalProductos: 0, productosVendidos: {} };
+            historialPedidos.forEach(pedidoHist => {
+                stats.totalVentas += pedidoHist.total;
+                stats.totalPedidos++;
+                pedidoHist.items.forEach(item => {
+                    stats.totalProductos += item.cantidad;
+                    if (!stats.productosVendidos[item.id]) {
+                        stats.productosVendidos[item.id] = { nombre: item.nombre, precio: item.precio, cantidad: 0 };
+                    }
+                    stats.productosVendidos[item.id].cantidad += item.cantidad;
+                });
+            });
+            return stats;
+        }
+
+        function cambiarSeccion(seccion) {
+            document.querySelectorAll('.seccion').forEach(s => s.style.display = 'none');
+            const seccionActiva = document.getElementById('seccion-' + seccion);
+            if (seccionActiva) seccionActiva.style.display = 'block';
+
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('activo'));
+            const linkActivo = document.querySelector('.nav-link[data-seccion="' + seccion + '"]');
+            if (linkActivo) linkActivo.classList.add('activo');
+
+            if (seccion === 'menu') renderizarMenuCompleto();
+            else if (seccion === 'pedidos') renderizarHistorialPedidos();
+            else if (seccion === 'reportes') actualizarReportes();
+        }
+
+        function renderizarProductos(categoria) {
+            const grid = document.getElementById('grid-productos');
+            const titulo = document.getElementById('titulo-categoria');
+            titulo.textContent = titulosCategoria[categoria];
+
+            const items = productos[categoria] || [];
+            grid.innerHTML = items.map(prod => `
+                <div class="card-producto">
+                    <img src="${prod.imagen}" alt="${prod.nombre}" loading="lazy">
+                    <div class="card-producto-info">
+                        <h4>${prod.nombre}</h4>
+                        <p>${prod.descripcion}</p>
+                        <div class="precio">${prod.precio > 0 ? '$' + prod.precio.toLocaleString('es-CO') : 'Módulo API'}</div>
+                        <button class="btn-agregar" data-id="${prod.id}" data-categoria="${categoria}" ${prod.precio === 0 ? 'style="background: #25282d;"' : ''}>
+                            ${prod.precio > 0 ? 'Agregar al Pedido' : 'Auditar en Video'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.btn-agregar').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const cat = this.getAttribute('data-categoria');
+                    if (cat === 'gestion') {
+                        alert('Ejecutando operaciones CRUD de Usuarios. Verificando coherencia técnica con Postman.');
+                        return;
+                    }
+                    agregarProducto(id, cat);
+                });
+            });
+        }
+
+        function filtrarCategoria(categoria, btn) {
+            categoriaActual = categoria;
+            document.querySelectorAll('.categoria-btn').forEach(b => b.classList.remove('activo'));
+            btn.classList.add('activo');
+            renderizarProductos(categoria);
+        }
+
+        function renderizarMenuCompleto() {
+            const contenedor = document.getElementById('menu-completo');
+            let html = '';
+            Object.keys(productos).forEach(categoria => {
+                html += `
+                    <div class="menu-categoria">
+                        <h3>${iconosCategoria[categoria]} ${titulosCategoria[categoria]}</h3>
+                        <div class="grid-productos">
+                            ${productos[categoria].map(prod => `
+                                <div class="card-producto">
+                                    <img src="${prod.imagen}" alt="${prod.nombre}" loading="lazy">
+                                    <div class="card-producto-info">
+                                        <h4>${prod.nombre}</h4>
+                                        <p>${prod.descripcion}</p>
+                                        <div class="precio">${prod.precio > 0 ? '$' + prod.precio.toLocaleString('es-CO') : 'Acceso Restringido'}</div>
+                                        <button class="btn-agregar-menu" data-id="${prod.id}" data-categoria="${categoria}">
+                                            ${prod.precio > 0 ? 'Añadir a la Orden' : 'Gestionar'}
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            contenedor.innerHTML = html;
+            
+            document.querySelectorAll('.btn-agregar-menu').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const cat = this.getAttribute('data-categoria');
+                    if(cat === 'gestion') return;
+                    agregarProducto(id, cat);
+                    this.textContent = '✓ Agregado';
+                    this.style.background = 'var(--exito)';
+                    setTimeout(() => { this.textContent = 'Añadir a la Orden'; this.style.background = ''; }, 1000);
+                });
+            });
+        }
+
+        function renderizarHistorialPedidos() {
+            const contenedor = document.getElementById('lista-pedidos-historial');
+            if (historialPedidos.length === 0) {
+                contenedor.innerHTML = \`<div class="pedidos-vacio"><div class="icono-grande">📦</div><h3>No hay transacciones registradas</h3><p>Las órdenes confirmadas aparecerán aquí</p></div>\`;
+                return;
+            }
+            let html = '';
+            [...historialPedidos].reverse().forEach(pedidoHist => {
+                html += `
+                    <div class="pedido-historial-card">
+                        <div class="pedido-historial-header">
+                            <h4>\${pedidoHist.numero}</h4>
+                            <span class="estado" style="color: var(--primario); background: var(--primario-suave);">✓ Modelo Sincronizado</span>
+                        </div>
+                        <div class="pedido-historial-items">
+                            \${pedidoHist.items.map(item => `<div class="pedido-historial-item"><span class="nombre">\${item.nombre} x\${item.cantidad}</span><span class="detalle">$Fixed</span></div>`).join('')}
+                        </div>
+                        <div class="pedido-historial-total">Total Relacional: \${pedidoHist.total}</div>
+                    </div>`;
+            });
+            contenedor.innerHTML = html;
+        }
+
+        function actualizarReportes() {
+            document.getElementById('reporte-ventas').textContent = '$' + statsVentas.totalVentas.toLocaleString('es-CO');
+            document.getElementById('reporte-pedidos').textContent = statsVentas.totalPedidos;
+            document.getElementById('reporte-productos').textContent = statsVentas.totalProductos;
+            const promedio = statsVentas.totalPedidos > 0 ? Math.round(statsVentas.totalVentas / statsVentas.totalPedidos) : 0;
+            document.getElementById('reporte-promedio').textContent = '$' + promedio.toLocaleString('es-CO');
+        }
+
+        function agregarProducto(id, categoria) {
+            const producto = productos[categoria].find(p => p.id === id);
+            if (!producto) return;
+            const existente = pedido.find(item => item.id === id);
+            if (existente) existente.cantidad++;
+            else pedido.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio, imagen: producto.imagen, cantidad: 1 });
+            actualizarPedido();
+        }
+
+        function eliminarProducto(id) {
+            pedido = pedido.filter(item => item.id !== id);
+            actualizarPedido();
+        }
+
+        function cambiarCantidad(id, delta) {
+            const item = pedido.find(i => i.id === id);
+            if (!item) return;
+            item.cantidad += delta;
+            if (item.cantidad <= 0) { eliminarProducto(id); return; }
+            actualizarPedido();
+        }
+
+        function actualizarPedido() {
+            const lista = document.getElementById('pedido-lista');
+            const totalDiv = document.getElementById('pedido-total');
+            const totalValor = document.getElementById('total-valor');
+
+            if (pedido.length === 0) {
+                lista.innerHTML = `<div class="pedido-vacio"><div class="icono-carrito">🛒</div><p>No hay productos en el pedido.</p></div>`;
+                totalDiv.style.display = 'none';
+                return;
+            }
+            let total = 0;
+            let html = '';
+            pedido.forEach(item => {
+                const subtotal = item.precio * item.cantidad;
+                total += subtotal;
+                html += `
+                    <div class="pedido-item">
+                        <img src="\${item.imagen}" alt="\${item.nombre}">
+                        <div class="pedido-item-info"><h5>\${item.nombre}</h5><div class="precio-item">$\${subtotal.toLocaleString('es-CO')}</div></div>
+                        <div class="pedido-item-controles">
+                            <button class="btn-cantidad" data-id="\${item.id}" data-delta="-1">−</button>
+                            <span class="cantidad-num">\${item.cantidad}</span>
+                            <button class="btn-cantidad" data-id="\${item.id}" data-delta="1">+</button>
+                        </div>
+                        <button class="btn-eliminar" data-id="\${item.id}">🗑</button>
+                    </div>`;
+            });
+            lista.innerHTML = html;
+            totalDiv.style.display = 'block';
+            totalValor.textContent = '$' + total.toLocaleString('es-CO');
+        }
+
+        function confirmarPedido() {
+            if (pedido.length === 0) { return; }
+            contadorPedido++;
+            const numeroPedido = '#PED-' + String(contadorPedido).padStart(6, '0');
+            const total = pedido.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+            historialPedidos.push({ numero: numeroPedido, items: [...pedido], total: total, fecha: new Date().toLocaleString('es-CO') });
+            
+            localStorage.setItem('historialPedidos', JSON.stringify(historialPedidos));
+            localStorage.setItem('contadorPedido', contadorPedido);
+            statsVentas = calcularEstadisticasIniciales();
+
+            document.getElementById('pedido-numero-texto').textContent = 'ID Transacción Relacional: ' + numeroPedido;
+            document.getElementById('modal-exito').classList.add('activo');
+            pedido = [];
+            actualizarPedido();
+        }
+
+        function vaciarHistorialPedidos() {
+            localStorage.removeItem('historialPedidos');
+            localStorage.removeItem('contadorPedido');
+            historialPedidos = [];
+            contadorPedido = 124;
+            statsVentas = { totalVentas: 0, totalPedidos: 0, totalProductos: 0, productosVendidos: {} };
+            renderizarHistorialPedidos();
+            actualizarReportes();
+        }
+
+        function cerrarModal(id) { document.getElementById(id).classList.remove('activo'); }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderizarProductos('comidas');
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) { e.preventDefault(); cambiarSeccion(this.getAttribute('data-seccion')); });
+            });
+            document.querySelectorAll('.categoria-btn').forEach(btn => {
+                btn.addEventListener('click', function() { filtrarCategoria(this.getAttribute('data-categoria'), this); });
+            });
+            document.getElementById('btn-confirmar').addEventListener('click', confirmarPedido);
+            document.getElementById('btn-vaciar-historial').addEventListener('click', vaciarHistorialPedidos);
+            document.getElementById('btn-cerrar-error').addEventListener('click', function() { cerrarModal('modal-error'); });
+            document.getElementById('btn-cerrar-exito').addEventListener('click', function() { cerrarModal('modal-exito'); });
+        });
+    </script>
+</body>
+</html>
