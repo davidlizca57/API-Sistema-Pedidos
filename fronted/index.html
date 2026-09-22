@@ -4,8 +4,328 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema Inteligente de Pedidos - SIP</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fontsource-poppins@5.0.0/index.css">
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --primario: #ff6b00;
+            --primario-suave: rgba(255, 107, 0, 0.12);
+            --exito: #22c55e;
+            --fondo: #f4f5f7;
+            --panel: #ffffff;
+            --texto: #1f2328;
+            --texto-suave: #6b7280;
+            --borde: #e5e7eb;
+            --radio: 14px;
+            --sombra: 0 4px 18px rgba(0,0,0,0.06);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--fondo);
+            color: var(--texto);
+            line-height: 1.5;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 14px 28px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--borde);
+            box-shadow: var(--sombra);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-img { width: 52px; height: 52px; }
+        .logo-text h1 { font-size: 1.05rem; letter-spacing: .3px; color: var(--texto); }
+        .logo-text span { font-size: .8rem; color: var(--texto-suave); }
+        .nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .nav-link {
+            text-decoration: none;
+            color: var(--texto-suave);
+            font-weight: 500;
+            padding: 8px 14px;
+            border-radius: 10px;
+            transition: all .18s ease;
+        }
+        .nav-link:hover { background: var(--primario-suave); color: var(--primario); }
+        .nav-link.activo { background: var(--primario); color: #fff; }
+        .btn-cerrar {
+            text-decoration: none;
+            color: #dc2626;
+            font-weight: 600;
+            padding: 8px 14px;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            transition: all .18s ease;
+        }
+        .btn-cerrar:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+
+        /* LAYOUT INICIO */
+        .container {
+            display: grid;
+            grid-template-columns: 240px 1fr 320px;
+            gap: 20px;
+            padding: 24px;
+            align-items: start;
+        }
+        .sidebar, .pedido-panel {
+            background: var(--panel);
+            border: 1px solid var(--borde);
+            border-radius: var(--radio);
+            padding: 18px;
+            box-shadow: var(--sombra);
+            position: sticky;
+            top: 96px;
+        }
+        .sidebar h3, .pedido-panel h3 { margin-bottom: 14px; font-size: 1rem; }
+        .categoria-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: 1px solid var(--borde);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            font-size: .95rem;
+            cursor: pointer;
+            color: var(--texto);
+            transition: all .18s ease;
+        }
+        .categoria-btn:hover { border-color: var(--primario); color: var(--primario); }
+        .categoria-btn.activo { background: var(--primario); color: #fff; border-color: var(--primario); }
+        .icono { font-size: 1.2rem; }
+
+        .productos-area h2 { margin-bottom: 18px; }
+        .grid-productos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 18px;
+        }
+        .card-producto {
+            background: var(--panel);
+            border: 1px solid var(--borde);
+            border-radius: var(--radio);
+            overflow: hidden;
+            box-shadow: var(--sombra);
+            display: flex;
+            flex-direction: column;
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .card-producto:hover { transform: translateY(-4px); box-shadow: 0 10px 26px rgba(0,0,0,.10); }
+        .card-producto img { width: 100%; height: 150px; object-fit: cover; }
+        .card-producto-info { padding: 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .card-producto-info h4 { font-size: 1rem; }
+        .card-producto-info p { font-size: .82rem; color: var(--texto-suave); flex: 1; }
+        .precio { font-size: 1.15rem; font-weight: 700; color: var(--primario); }
+        .btn-agregar, .btn-agregar-menu {
+            margin-top: 8px;
+            background: var(--primario);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity .18s ease, background .18s ease;
+        }
+        .btn-agregar:hover, .btn-agregar-menu:hover { opacity: .9; }
+
+        /* PANEL PEDIDO */
+        .pedido-vacio { text-align: center; color: var(--texto-suave); padding: 24px 6px; }
+        .icono-carrito { font-size: 2.4rem; margin-bottom: 8px; }
+        .pedido-item {
+            display: grid;
+            grid-template-columns: 48px 1fr auto;
+            grid-template-areas: "img info del" "img ctrl del";
+            gap: 6px 10px;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--borde);
+        }
+        .pedido-item img { grid-area: img; width: 48px; height: 48px; border-radius: 8px; object-fit: cover; }
+        .pedido-item-info { grid-area: info; }
+        .pedido-item-info h5 { font-size: .85rem; }
+        .precio-item { font-size: .82rem; color: var(--primario); font-weight: 600; }
+        .pedido-item-controles { grid-area: ctrl; display: flex; align-items: center; gap: 8px; }
+        .btn-cantidad {
+            width: 26px; height: 26px;
+            border: 1px solid var(--borde);
+            background: #fff;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+        }
+        .btn-cantidad:hover { border-color: var(--primario); color: var(--primario); }
+        .cantidad-num { min-width: 20px; text-align: center; font-weight: 600; }
+        .btn-eliminar { grid-area: del; background: none; border: none; cursor: pointer; font-size: 1.1rem; }
+        .pedido-total { margin-top: 16px; text-align: center; }
+        .total-label { font-size: .9rem; color: var(--texto-suave); }
+        .total-valor { font-size: 1.6rem; font-weight: 800; color: var(--primario); margin: 4px 0 12px; }
+        .btn-confirmar {
+            width: 100%;
+            background: var(--exito);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-confirmar:hover { opacity: .92; }
+
+        /* SECCIONES GENERICAS */
+        .menu-container, .pedidos-container, .reportes-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 28px 24px;
+        }
+        .menu-header, .reportes-header { text-align: center; margin-bottom: 26px; }
+        .menu-header p, .reportes-header p { color: var(--texto-suave); margin-top: 6px; }
+        .menu-categoria { margin-bottom: 32px; }
+        .menu-categoria h3 { margin-bottom: 16px; }
+
+        /* PEDIDOS HISTORIAL */
+        .pedidos-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .pedidos-header p { color: var(--texto-suave); margin-top: 4px; }
+        .btn-vaciar {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-vaciar:hover { background: #dc2626; color: #fff; }
+        .pedidos-vacio { text-align: center; color: var(--texto-suave); padding: 50px 10px; }
+        .icono-grande { font-size: 3rem; margin-bottom: 10px; }
+        .pedido-historial-card {
+            background: var(--panel);
+            border: 1px solid var(--borde);
+            border-radius: var(--radio);
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: var(--sombra);
+        }
+        .pedido-historial-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .estado { font-size: .8rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+        .pedido-historial-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: .9rem;
+            padding: 4px 0;
+            color: var(--texto-suave);
+        }
+        .pedido-historial-total {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--borde);
+            font-weight: 700;
+            text-align: right;
+            color: var(--primario);
+        }
+
+        /* REPORTES */
+        .reportes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+        .reporte-card {
+            background: var(--panel);
+            border: 1px solid var(--borde);
+            border-radius: var(--radio);
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--sombra);
+        }
+        .reporte-icono { font-size: 2rem; margin-bottom: 8px; }
+        .reporte-card h3 { font-size: .95rem; color: var(--texto-suave); font-weight: 500; }
+        .reporte-valor { font-size: 1.8rem; font-weight: 800; color: var(--primario); margin: 6px 0; }
+        .reporte-sub { font-size: .78rem; color: var(--texto-suave); }
+        .reporte-detalle {
+            background: var(--panel);
+            border: 1px solid var(--borde);
+            border-radius: var(--radio);
+            padding: 22px;
+            box-shadow: var(--sombra);
+        }
+        .reporte-detalle h3 { margin-bottom: 14px; }
+
+        /* MODALES */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+        }
+        .modal-overlay.activo { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            padding: 30px 26px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,.25);
+        }
+        .modal h3 { margin-bottom: 10px; }
+        .modal p { color: var(--texto-suave); font-size: .9rem; margin-bottom: 6px; }
+        .modal-icono {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 16px;
+        }
+        .modal-icono.error { background: #fee2e2; color: #dc2626; }
+        .modal-icono.exito { background: #dcfce7; color: var(--exito); }
+        .pedido-numero { font-weight: 600; color: var(--texto) !important; margin-top: 8px; }
+        .btn-modal {
+            margin-top: 18px;
+            background: var(--primario);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 11px 26px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-modal:hover { opacity: .9; }
+
+        /* RESPONSIVE */
+        @media (max-width: 980px) {
+            .container { grid-template-columns: 1fr; }
+            .sidebar, .pedido-panel { position: static; }
+        }
+    </style>
 </head>
 <body>
 
@@ -207,7 +527,7 @@
 
         let pedido = [];
         let categoriaActual = 'comidas';
-        
+
         let historialPedidos = JSON.parse(localStorage.getItem('historialPedidos')) || [];
         let contadorPedido = parseInt(localStorage.getItem('contadorPedido')) || 124;
         let statsVentas = calcularEstadisticasIniciales();
@@ -308,12 +628,12 @@
                 `;
             });
             contenedor.innerHTML = html;
-            
+
             document.querySelectorAll('.btn-agregar-menu').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.getAttribute('data-id');
                     const cat = this.getAttribute('data-categoria');
-                    if(cat === 'gestion') return;
+                    if (cat === 'gestion') return;
                     agregarProducto(id, cat);
                     this.textContent = '✓ Agregado';
                     this.style.background = 'var(--exito)';
@@ -325,7 +645,7 @@
         function renderizarHistorialPedidos() {
             const contenedor = document.getElementById('lista-pedidos-historial');
             if (historialPedidos.length === 0) {
-                contenedor.innerHTML = \`<div class="pedidos-vacio"><div class="icono-grande">📦</div><h3>No hay transacciones registradas</h3><p>Las órdenes confirmadas aparecerán aquí</p></div>\`;
+                contenedor.innerHTML = `<div class="pedidos-vacio"><div class="icono-grande">📦</div><h3>No hay transacciones registradas</h3><p>Las órdenes confirmadas aparecerán aquí</p></div>`;
                 return;
             }
             let html = '';
@@ -333,13 +653,13 @@
                 html += `
                     <div class="pedido-historial-card">
                         <div class="pedido-historial-header">
-                            <h4>\${pedidoHist.numero}</h4>
+                            <h4>${pedidoHist.numero}</h4>
                             <span class="estado" style="color: var(--primario); background: var(--primario-suave);">✓ Modelo Sincronizado</span>
                         </div>
                         <div class="pedido-historial-items">
-                            \${pedidoHist.items.map(item => `<div class="pedido-historial-item"><span class="nombre">\${item.nombre} x\${item.cantidad}</span><span class="detalle">$Fixed</span></div>`).join('')}
+                            ${pedidoHist.items.map(item => `<div class="pedido-historial-item"><span class="nombre">${item.nombre} x${item.cantidad}</span><span class="detalle">$${(item.precio * item.cantidad).toLocaleString('es-CO')}</span></div>`).join('')}
                         </div>
-                        <div class="pedido-historial-total">Total Relacional: \${pedidoHist.total}</div>
+                        <div class="pedido-historial-total">Total Relacional: $${pedidoHist.total.toLocaleString('es-CO')}</div>
                     </div>`;
             });
             contenedor.innerHTML = html;
@@ -351,6 +671,14 @@
             document.getElementById('reporte-productos').textContent = statsVentas.totalProductos;
             const promedio = statsVentas.totalPedidos > 0 ? Math.round(statsVentas.totalVentas / statsVentas.totalPedidos) : 0;
             document.getElementById('reporte-promedio').textContent = '$' + promedio.toLocaleString('es-CO');
+
+            const topContenedor = document.getElementById('reporte-top-productos');
+            const lista = Object.values(statsVentas.productosVendidos).sort((a, b) => b.cantidad - a.cantidad);
+            if (lista.length === 0) {
+                topContenedor.innerHTML = '<p style="color:var(--texto-suave);">Aún no hay ventas registradas.</p>';
+                return;
+            }
+            topContenedor.innerHTML = lista.map(p => `<div class="pedido-historial-item"><span class="nombre">${p.nombre}</span><span class="detalle">${p.cantidad} uds.</span></div>`).join('');
         }
 
         function agregarProducto(id, categoria) {
@@ -392,28 +720,42 @@
                 total += subtotal;
                 html += `
                     <div class="pedido-item">
-                        <img src="\${item.imagen}" alt="\${item.nombre}">
-                        <div class="pedido-item-info"><h5>\${item.nombre}</h5><div class="precio-item">$\${subtotal.toLocaleString('es-CO')}</div></div>
+                        <img src="${item.imagen}" alt="${item.nombre}">
+                        <div class="pedido-item-info"><h5>${item.nombre}</h5><div class="precio-item">$${subtotal.toLocaleString('es-CO')}</div></div>
                         <div class="pedido-item-controles">
-                            <button class="btn-cantidad" data-id="\${item.id}" data-delta="-1">−</button>
-                            <span class="cantidad-num">\${item.cantidad}</span>
-                            <button class="btn-cantidad" data-id="\${item.id}" data-delta="1">+</button>
+                            <button class="btn-cantidad" data-id="${item.id}" data-delta="-1">−</button>
+                            <span class="cantidad-num">${item.cantidad}</span>
+                            <button class="btn-cantidad" data-id="${item.id}" data-delta="1">+</button>
                         </div>
-                        <button class="btn-eliminar" data-id="\${item.id}">🗑</button>
+                        <button class="btn-eliminar" data-id="${item.id}">🗑</button>
                     </div>`;
             });
             lista.innerHTML = html;
             totalDiv.style.display = 'block';
             totalValor.textContent = '$' + total.toLocaleString('es-CO');
+
+            document.querySelectorAll('.btn-cantidad').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    cambiarCantidad(this.getAttribute('data-id'), parseInt(this.getAttribute('data-delta')));
+                });
+            });
+            document.querySelectorAll('.btn-eliminar').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    eliminarProducto(this.getAttribute('data-id'));
+                });
+            });
         }
 
         function confirmarPedido() {
-            if (pedido.length === 0) { return; }
+            if (pedido.length === 0) {
+                document.getElementById('modal-error').classList.add('activo');
+                return;
+            }
             contadorPedido++;
             const numeroPedido = '#PED-' + String(contadorPedido).padStart(6, '0');
             const total = pedido.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
             historialPedidos.push({ numero: numeroPedido, items: [...pedido], total: total, fecha: new Date().toLocaleString('es-CO') });
-            
+
             localStorage.setItem('historialPedidos', JSON.stringify(historialPedidos));
             localStorage.setItem('contadorPedido', contadorPedido);
             statsVentas = calcularEstadisticasIniciales();
