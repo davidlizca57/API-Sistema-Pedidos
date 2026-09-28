@@ -3,11 +3,11 @@ const productosRoutes = require('./routes/productosRoutes');
 const usuariosRoutes = require('./routes/usuariosRoutes'); 
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// 🚀 Inyección modular de rutas (Arquitectura totalmente desacoplada)
+// Inyección modular de rutas (Arquitectura totalmente desacoplada)
 app.use('/api', productosRoutes);
 app.use('/api', usuariosRoutes);
 

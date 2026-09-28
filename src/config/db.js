@@ -1,11 +1,11 @@
 const mysql = require('mysql2');
+require('dotenv').config(); // Carga las variables de entorno
 
-// Crear la conexión centralizada a la base de datos
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'root1234', 
-    database: 'sistema_pedidos'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
 db.connect((err) => {
@@ -13,7 +13,7 @@ db.connect((err) => {
         console.error('Error conectando a la base de datos:', err);
         return;
     }
-    console.log('Conexión exitosa a la base de datos relacional MySQL');
+    console.log('Conexión exitosa a la base de datos relacional MySQL mediante variables de entorno');
 });
 
 module.exports = db;
