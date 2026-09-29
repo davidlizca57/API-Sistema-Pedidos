@@ -1,9 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './Menu.css';
-
-// Imagen de respaldo por si un producto no trae 'imagen' desde la API
-const IMAGEN_POR_DEFECTO =
-  'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400';
 
 function Menu({ usuario }) {
   const [productos, setProductos] = useState([]);
@@ -71,19 +66,10 @@ function Menu({ usuario }) {
         <div className="grid-productos">
           {productos.map(prod => (
             <div key={prod.id} className="card-producto">
-              <img
-                src={prod.imagen || IMAGEN_POR_DEFECTO}
-                alt={prod.nombre}
-                loading="lazy"
-                className="card-imagen"
-                onError={(e) => { e.target.src = IMAGEN_POR_DEFECTO; }}
-              />
-              <div className="card-producto-info">
-                <h4>{prod.nombre}</h4>
-                <p>{prod.descripcion}</p>
-                <div className="precio">${parseFloat(prod.precio).toLocaleString('es-CO')}</div>
-                <button onClick={() => agregarAlCarrito(prod)} className="btn-agregar">Añadir al Carrito</button>
-              </div>
+              <h4>{prod.nombre}</h4>
+              <p>{prod.descripcion}</p>
+              <div className="precio">${parseFloat(prod.precio).toLocaleString('es-CO')}</div>
+              <button onClick={() => agregarAlCarrito(prod)} className="btn-agregar">Añadir al Carrito</button>
             </div>
           ))}
         </div>
@@ -93,29 +79,20 @@ function Menu({ usuario }) {
         <h3>🛒 Tu Comanda Actual</h3>
         {mensajeExito && <div className="exito-box">{mensajeExito}</div>}
         {carrito.length === 0 ? (
-          <p className="carrito-vacio">No hay ítems agregados.</p>
+          <p>No hay ítems agregados.</p>
         ) : (
           <div>
             {carrito.map(item => (
               <div key={item.id} className="item-carrito">
-                <img
-                  src={item.imagen || IMAGEN_POR_DEFECTO}
-                  alt={item.nombre}
-                  className="item-carrito-img"
-                  onError={(e) => { e.target.src = IMAGEN_POR_DEFECTO; }}
-                />
-                <div className="item-carrito-info">
-                  <span className="item-nombre">{item.nombre}</span>
-                  <span className="item-subtotal">${(item.precio * item.cantidad).toLocaleString('es-CO')}</span>
-                </div>
-                <div className="item-controles">
-                  <button onClick={() => modificarCantidad(item.id, -1)} className="btn-cantidad">-</button>
-                  <span className="cantidad-num">{item.cantidad}</span>
-                  <button onClick={() => modificarCantidad(item.id, 1)} className="btn-cantidad">+</button>
+                <span>{item.nombre}</span>
+                <div>
+                  <button onClick={() => modificarCantidad(item.id, -1)}>-</button>
+                  <span>{item.cantidad}</span>
+                  <button onClick={() => modificarCantidad(item.id, 1)}>+</button>
                 </div>
               </div>
             ))}
-            <h4 className="total-pagar">Total a Pagar: ${total.toLocaleString('es-CO')}</h4>
+            <h4>Total a Pagar: ${total.toLocaleString('es-CO')}</h4>
             <button onClick={enviarPedido} className="btn-confirmar">Enviar Orden Directa a BD</button>
           </div>
         )}
