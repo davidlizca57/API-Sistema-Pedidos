@@ -1,0 +1,52 @@
+{
+	"info": {
+		"name": "Sistema Inteligente de Pedidos (SIP) - Pruebas de Integración",
+		"schema": "https://getpostman.com"
+	},
+	"item": [
+		{
+			"name": "Módulo Usuarios - Registrar",
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"nombre\": \"David Lizcano\",\n    \"correo\": \"davidadmin@restaurante.com\",\n    \"password\": \"123456\",\n    \"rol\": \"administrador\"\n}"
+				},
+				"url": { "raw": "http://localhost:3000/api/usuarios", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "usuarios"] }
+			}
+		},
+		{
+			"name": "Módulo Usuarios - Login Bcrypt",
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"correo\": \"davidadmin@restaurante.com\",\n    \"password\": \"123456\"\n}"
+				},
+				"url": { "raw": "http://localhost:3000/api/usuarios/login", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "usuarios", "login"] }
+			}
+		},
+		{
+			"name": "Módulo Productos - Obtener Catálogo",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": { "raw": "http://localhost:3000/api/productos", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "productos"] }
+			}
+		},
+		{
+			"name": "Módulo Pedidos - Enviar Orden Completa",
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"usuario_id\": 1,\n    \"total\": 41000,\n    \"items\": [\n        { \"producto_id\": 1, \"cantidad\": 2, \"precio_unitario\": 18500 },\n        { \"producto_id\": 3, \"cantidad\": 1, \"precio_unitario\": 7500 }\n    ]\n}"
+				},
+				"url": { "raw": "http://localhost:3000/api/pedidos", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "pedidos"] }
+			}
+		}
+	]
+}
