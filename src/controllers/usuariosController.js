@@ -1,94 +1,154 @@
-const db = require('../config/db');
-const bcrypt = require('bcrypt'); // Importamos la librería de cifrado exigida por el SENA
+const db = require('../config/db'); // Ajusta la ruta a tu conexión de base de datos
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-// 1. LEER TODOS (GET)
-const obtenerUsuarios = (req, res) => {
-    db.query('SELECT id, nombre, correo, rol FROM usuarios', (err, results) => {
-        if (err) return res.status(500).json({ error: 'Error interno del servidor' });
-        res.json(results);
-    });
+const JWT_SECRET = process.env.JWT_SECRET || 'desbloquearsistema';
+
+// 0. OBTENER TODOS LOS USUARIOS (GET)
+const obtenerUsuarios = async (req, res, next) => {
+    try {
+        // No devolvemos el campo password por seguridad
+        const [rows] = await db.query('SELECT id, nombre, correo, rol FROM usuarios');
+        res.status(200).json(rows);
+    } catch (error) {
+        next(error);
+    }
 };
 
-// 2. REGISTRO DE USUARIOS (POST) - ¡Ahora con cifrado de seguridad!
-const registrarUsuario = async (req, res) => {
+// 0b. REGISTRAR UN NUEVO USUARIO CON CIFRADO DE CONTRASEÑA (POST)
+const registrarUsuario = async (req, res, next) => {
     const { nombre, correo, password, rol } = req.body;
-
-    if (!nombre || !correo || !password) {
-        return res.status(400).json({ error: 'Todos los campos (nombre, correo, password) son obligatorios' });
-    }
 
     try {
-        // Encriptamos la contraseña aplicando 10 rondas de seguridad (saltRounds)
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Validación básica de campos obligatorios
+        if (!nombre || !correo || !password) {
+            return res.status(400).json({ error: 'Nombre, correo y password son obligatorios' });
+        }
 
-        const query = 'INSERT INTO usuarios (nombre, correo, password, rol) VALUES (?, ?, ?, ?)';
-        db.query(query, [nombre, correo, hashedPassword, rol || 'cliente'], (err, result) => {
-            if (err) {
-                if (err.code === 'ER_DUP_ENTRY') {
-                    return res.status(400).json({ error: 'El correo electrónico ya está registrado' });
-                }
-                return res.status(500).json({ error: 'Error al registrar el usuario' });
-            }
-            res.status(201).json({ mensaje: 'Usuario registrado con éxito y protegido con Bcrypt', id: result.insertId });
+        // Verificar que el correo no esté ya registrado
+        const [existente] = await db.query('SELECT id FROM usuarios WHERE correo = ?', [correo]);
+        if (existente.length > 0) {
+            return res.status(409).json({ error: 'El correo ya se encuentra registrado' });
+        }
+
+        // Encriptar la contraseña obligatoriamente con bcrypt
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        // Insertar el nuevo usuario en MySQL
+        const [result] = await db.query(
+            'INSERT INTO usuarios (nombre, correo, password, rol) VALUES (?, ?, ?, ?)',
+            [nombre, correo, passwordHash, rol || 'cliente']
+        );
+
+        res.status(201).json({
+            message: 'Usuario registrado con éxito',
+            id: result.insertId,
+            usuario: { id: result.insertId, nombre, correo, rol: rol || 'cliente' }
         });
+
     } catch (error) {
-        return res.status(500).json({ error: 'Error del sistema al encriptar la credencial' });
+        next(error);
     }
 };
 
-// 3. INICIO DE SESIÓN / LOGIN (POST) - ¡Cotejando hashes de forma segura!
-const loginUsuario = (req, res) => {
+// 1. INICIO DE SESIÓN CON GENERACIÓN DE TOKEN JWT
+const loginUsuario = async (req, res, next) => {
     const { correo, password } = req.body;
 
-    if (!correo || !password) {
-        return res.status(400).json({ error: 'Correo y contraseña son obligatorios' });
-    }
-
-    // Buscamos al usuario por su correo
-    const query = 'SELECT * FROM usuarios WHERE correo = ?';
-    db.query(query, [correo], async (err, results) => {
-        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+    try {
+        // Consultar si el usuario existe por su correo electrónico
+        const [rows] = await db.query('SELECT * FROM usuarios WHERE correo = ?', [correo]);
         
-        if (results.length === 0) {
-            return res.status(401).json({ error: 'Credenciales incorrectas' });
+        if (rows.length === 0) {
+            return res.status(401).json({ error: 'Credenciales inválidas: correo no registrado' });
         }
 
-        const usuario = results[0];
+        const usuario = rows[0];
 
-        // Comparamos de forma segura la contraseña escrita con el hash oculto de la BD
-        const coinciden = await bcrypt.compare(password, usuario.password);
-        
-        if (!coinciden) {
-            return res.status(401).json({ error: 'Credenciales incorrectas' });
+        // Verificar si la contraseña coincide usando bcrypt
+        const contraseñaValida = await bcrypt.compare(password, usuario.password);
+        if (!contraseñaValida) {
+            return res.status(401).json({ error: 'Credenciales inválidas: contraseña incorrecta' });
         }
 
-        res.json({ 
-            mensaje: 'Inicio de sesión exitoso bajo estándares Bcrypt', 
-            usuario: { id: usuario.id, nombre: usuario.nombre, rol: usuario.rol } 
+        // Generar el Token de seguridad incluyendo ID, correo y ROL para la autorización
+        const token = jwt.sign(
+            { id: usuario.id, correo: usuario.correo, rol: usuario.rol || 'cliente' },
+            JWT_SECRET,
+            { expiresIn: '8h' } // El token expira automáticamente en 8 horas
+        );
+
+        // Retornar la respuesta exitosa al frontend
+        res.status(200).json({
+            message: 'Autenticación exitosa',
+            token: token,
+            usuario: {
+                id: usuario.id,
+                nombre: usuario.nombre,
+                rol: usuario.rol || 'cliente'
+            }
         });
-    });
+
+    } catch (error) {
+        next(error); // Envía el error al middleware centralizado que creamos
+    }
 };
 
-// 4. ACTUALIZAR USUARIO (PUT)
-const actualizarUsuario = (req, res) => {
+// 2. ACTUALIZACIÓN DE USUARIO CON CIFRADO DE CONTRASEÑA OBLIGATORIO (PUT)
+const actualizarUsuario = async (req, res, next) => {
     const { id } = req.params;
     const { nombre, correo, password, rol } = req.body;
-    const query = 'UPDATE usuarios SET nombre = ?, correo = ?, password = ?, rol = ? WHERE id = ?';
-    db.query(query, [nombre, correo, password, rol, id], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ mensaje: 'Usuario actualizado correctamente' });
-    });
+
+    try {
+        // 1. Verificar primero si el usuario existe en la base de datos
+        const [userCheck] = await db.query('SELECT * FROM usuarios WHERE id = ?', [id]);
+        if (userCheck.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado en el sistema' });
+        }
+
+        let passwordFinal = userCheck[0].password; // Si no envía password nuevo, conserva el actual
+
+        // 2. Si el usuario envió una nueva contraseña, la encriptamos obligatoriamente con bcrypt
+        if (password && password.trim() !== '') {
+            const salt = await bcrypt.genSalt(10);
+            passwordFinal = await bcrypt.hash(password, salt);
+        }
+
+        // 3. Ejecutar la actualización segura en MySQL
+        await db.query(
+            'UPDATE usuarios SET nombre = ?, correo = ?, password = ?, rol = ? WHERE id = ?',
+            [nombre || userCheck[0].nombre, correo || userCheck[0].correo, passwordFinal, rol || userCheck[0].rol, id]
+        );
+
+        res.status(200).json({ message: 'Usuario actualizado con éxito y seguridad garantizada' });
+
+    } catch (error) {
+        next(error);
+    }
 };
 
-// 5. ELIMINAR USUARIO (DELETE)
-const eliminarUsuario = (req, res) => {
+// 3. ELIMINAR USUARIO (DELETE)
+const eliminarUsuario = async (req, res, next) => {
     const { id } = req.params;
-    db.query('DELETE FROM usuarios WHERE id = ?', [id], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ mensaje: 'Usuario eliminado correctamente' });
-    });
+
+    try {
+        // Verificar que el usuario exista antes de eliminar
+        const [userCheck] = await db.query('SELECT id FROM usuarios WHERE id = ?', [id]);
+        if (userCheck.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado en el sistema' });
+        }
+
+        await db.query('DELETE FROM usuarios WHERE id = ?', [id]);
+
+        res.status(200).json({ message: 'Usuario eliminado con éxito' });
+
+    } catch (error) {
+        next(error);
+    }
 };
 
+// Exportamos las CINCO funciones que esperan las rutas
 module.exports = {
     obtenerUsuarios,
     registrarUsuario,

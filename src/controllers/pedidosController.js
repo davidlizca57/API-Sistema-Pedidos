@@ -1,64 +1,95 @@
-const db = require('../config/db');
+const db = require('../config/db'); // Ajusta la ruta a tu conexión de base de datos
 
-// CREAR UN PEDIDO REAL E INSERTAR SUS DETALLES (Operación de Integración Completa)
-const crearPedidoCompleto = async (req, res) => {
-    const { usuario_id, total, items } = req.body; // 'items' será un array con los platos comprados
+const crearPedidoCompleto = async (req, res, next) => {
+    const { usuario_id, productos } = req.body; // 'productos' es un array de objetos [{ producto_id: 1, cantidad: 2 }]
 
-    // Validación estricta para asegurar la integridad de datos exigida por el SENA
-    if (!usuario_id || !total || !items || items.length === 0) {
-        return res.status(400).json({ error: 'Faltan datos obligatorios para procesar la transacción del pedido' });
+    if (!productos || productos.length === 0) {
+        return res.status(400).json({ error: 'No se puede procesar un pedido sin ítems o productos' });
     }
 
-    // Iniciamos la inserción del Pedido General (Cabecera)
-    const queryPedido = 'INSERT INTO pedidos (usuario_id, total) VALUES (?, ?)';
-    
-    db.query(queryPedido, [usuario_id, total], (err, result) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error interno al registrar la cabecera del pedido en MySQL' });
-        }
+    // Obtenemos una conexión limpia del pool para poder ejecutar la transacción manual
+    const conexion = await db.getConnection();
 
-        const pedidoId = result.insertId; // Capturamos el ID autogenerado del pedido
-        
-        // Mapeamos e preparamos las consultas para insertar cada plato en detalles_pedidos
-        const queryDetalle = 'INSERT INTO detalles_pedidos (pedido_id, producto_id, cantidad, precio_unitario) VALUES ?';
-        
-        // Transformamos el array de productos del frontend en la estructura que acepta MySQL
-        const valoresDetalles = items.map(item => [
-            pedidoId,
-            item.producto_id,
-            item.cantidad,
-            item.precio_unitario
-        ]);
+    try {
+        // 1. INICIAR LA TRANSACCIÓN ATÓMICA DE MYSQL
+        await conexion.beginTransaction();
 
-        // Insertamos masivamente todos los detalles del pedido de un solo golpe
-        db.query(queryDetalle, [valoresDetalles], (errDetalle) => {
-            if (errDetalle) {
-                return res.status(500).json({ error: 'Error al persistir el desglose de productos en la base de datos' });
+        let totalPedidoCalculado = 0;
+        const listaDetallesParaInsertar = [];
+
+        // 2. CAPA DE VALIDACIÓN FINANCIERA: Consultar precios directamente de la base de datos
+        for (const item of productos) {
+            const [productoRows] = await conexion.query(
+                'SELECT id, precio, stock FROM productos WHERE id = ?', 
+                [item.producto_id]
+            );
+
+            if (productoRows.length === 0) {
+                throw new Error(`El producto con ID ${item.producto_id} no existe en el catálogo.`);
             }
 
-            res.status(201).json({
-                mensaje: 'Pedido y detalles registrados con éxito absoluto en el backend',
-                pedido_id: pedidoId
+            const productoBD = productoRows[0];
+
+            // Validación opcional de inventario (Stock)
+            if (productoBD.stock < item.cantidad) {
+                throw new Error(`Inconsistencia: Stock insuficiente para el producto ID ${item.producto_id}`);
+            }
+
+            // Calcular el subtotal usando el precio real del backend
+            const subtotalItem = productoBD.precio * item.cantidad;
+            totalPedidoCalculado += subtotalItem;
+
+            // Guardamos los datos validados para la inserción posterior del detalle
+            listaDetallesParaInsertar.push({
+                producto_id: productoBD.id,
+                cantidad: item.cantidad,
+                precio_unitario: productoBD.precio
             });
+        }
+
+        // 3. INSERTAR LA CABECERA DEL PEDIDO (Tabla: pedidos)
+        const [resultadoPedido] = await conexion.query(
+            'INSERT INTO pedidos (usuario_id, total, estado, fecha) VALUES (?, ?, ?, NOW())',
+            [usuario_id, totalPedidoCalculado, 'pendiente']
+        );
+
+        const nuevoPedidoId = resultadoPedido.insertId;
+
+        // 4. INSERTAR LOS DETALLES DEL PEDIDO (Tabla: detalles_pedidos)
+        for (const detalle of listaDetallesParaInsertar) {
+            await conexion.query(
+                'INSERT INTO detalles_pedidos (pedido_id, producto_id, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
+                [nuevoPedidoId, detalle.producto_id, detalle.cantidad, detalle.precio_unitario]
+            );
+
+            // Actualizar o rebajar el stock del producto de forma automática
+            await conexion.query(
+                'UPDATE productos SET stock = stock - ? WHERE id = ?',
+                [detalle.cantidad, detalle.producto_id]
+            );
+        }
+
+        // 5. SI TODO SALIÓ BIEN, CONFIRMAR Y GUARDAR LOS CAMBIOS DE MANERA DEFINITIVA
+        await conexion.commit();
+
+        res.status(201).json({
+            success: true,
+            message: 'Pedido registrado con éxito mediante transacción atómica',
+            pedido_id: nuevoPedidoId,
+            total_cobrado: totalPedidoCalculado
         });
-    });
+
+    } catch (error) {
+        // 6. EN CASO DE CUALQUIER FALLA, SE CANCELA TODO Y LA BASE DE DATOS REGRESA A SU ESTADO ORIGINAL
+        await conexion.rollback();
+        
+        // Formateamos el error para enviarlo al manejador centralizado
+        error.statusCode = 400;
+        next(error);
+    } finally {
+        // Liberar la conexión de vuelta al pool obligatoriamente
+        conexion.release();
+    }
 };
 
-// CONSULTAR HISTORIAL REAL DE PEDIDOS (GET)
-const obtenerHistorialPedidos = (req, res) => {
-    const query = `
-        SELECT p.id AS pedido_id, p.fecha, p.total, p.estado, u.nombre AS cliente 
-        FROM pedidos p 
-        INNER JOIN usuarios u ON p.usuario_id = u.id 
-        ORDER BY p.fecha DESC`;
-
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).json({ error: 'Error al consultar el historial relacional' });
-        res.json(results);
-    });
-};
-
-module.exports = {
-    crearPedidoCompleto,
-    obtenerHistorialPedidos
-};
+module.exports = { crearPedidoCompleto };
