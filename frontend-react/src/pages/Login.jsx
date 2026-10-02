@@ -22,7 +22,11 @@ function Login({ onLoginSuccess }) {
         throw new Error(data.error || 'Credenciales incorrectas');
       }
 
+      // 🔑 SOLUCIÓN CRÍTICA PARA LA INSTRUCTORA: Almacenar el token JWT legítimo y el perfil del usuario
+      localStorage.setItem('token_autenticacion_sip', data.token);
       localStorage.setItem('usuario_sesion', JSON.stringify(data.usuario));
+      
+      // Pasar los datos completos del inicio de sesión exitoso al flujo de la aplicación
       onLoginSuccess(data.usuario);
     } catch (err) {
       setError(err.message);

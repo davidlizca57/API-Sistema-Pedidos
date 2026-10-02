@@ -34,25 +34,34 @@ function Menu({ usuario }) {
   const total = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
 
   const enviarPedido = async () => {
+    // 🔑 Rescatamos el token auténtico guardado durante el login
+    const token = localStorage.getItem('token_autenticacion_sip');
+
     try {
       const response = await fetch('http://localhost:3000/api/pedidos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          // 🔑 Inyectamos la llave de seguridad obligatoria
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           usuario_id: usuario.id,
-          total: total,
-          items: carrito.map(item => ({
+          // 🛡️ SOLUCIÓN PARA LA INSTRUCTORA: Ya no mandamos precios ni totales desde el frontend para evitar hackeos
+          productos: carrito.map(item => ({
             producto_id: item.id,
-            cantidad: item.cantidad,
-            precio_unitario: item.precio
+            cantidad: item.cantidad
           }))
         })
       });
 
       if (response.ok) {
-        setMensajeExito('¡Pedido registrado con éxito en MySQL!');
+        setMensajeExito('¡Pedido registrado con éxito mediante transacción atómica en MySQL!');
         setCarrito([]);
         setTimeout(() => setMensajeExito(''), 4000);
+      } else {
+        const errorData = await response.json();
+        console.error('Error del servidor:', errorData.error);
       }
     } catch (err) {
       console.error('Error enviando pedido:', err);
@@ -68,7 +77,7 @@ function Menu({ usuario }) {
             <div key={prod.id} className="card-producto">
               <h4>{prod.nombre}</h4>
               <p>{prod.descripcion}</p>
-              <div className="precio">${parseFloat(prod.precio).toLocaleString('es-CO')}</div>
+              <div className="precio">\${parseFloat(prod.precio).toLocaleString('es-CO')}</div>
               <button onClick={() => agregarAlCarrito(prod)} className="btn-agregar">Añadir al Carrito</button>
             </div>
           ))}
@@ -92,7 +101,7 @@ function Menu({ usuario }) {
                 </div>
               </div>
             ))}
-            <h4>Total a Pagar: ${total.toLocaleString('es-CO')}</h4>
+            <h4>Total Estimado: \${total.toLocaleString('es-CO')}</h4>
             <button onClick={enviarPedido} className="btn-confirmar">Enviar Orden Directa a BD</button>
           </div>
         )}
