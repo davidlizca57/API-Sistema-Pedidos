@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 function Historial() {
-  const [pedidos, setPedidos] = useState([]); 
+  const [pedidos, setPedidos] = useState([]);
 
   useEffect(() => {
     // 🔑 Rescatamos el token auténtico guardado durante el inicio de sesión
