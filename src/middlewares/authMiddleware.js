@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'clave_secreta_para_desarrollo_sip';
+const JWT_SECRET = process.env.JWT_SECRET || 'desbloquearsistema';
 
 // Middleware de verificación de Token JWT
 const verificarToken = (req, res, next) => {

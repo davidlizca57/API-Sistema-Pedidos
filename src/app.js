@@ -21,6 +21,17 @@ app.use('/api', usuariosRoutes);
 app.use('/api', pedidosRoutes);
 app.use('/api/reportes', reportesRoutes);
 
+// Middleware global centralizado para manejo de errores
+app.use((err, req, res, next) => {
+    console.error("Fallo detectado en el sistema:", err.stack);
+    const statusCode = err.statusCode || 500;
+    res.status(statusCode).json({
+        success: false,
+        error: err.message || 'Error interno del servidor en el sistema de pedidos'
+    });
+});
+
+
 app.listen(PORT, () => {
     console.log(`Servidor ejecutándose de forma modular en http://localhost:${PORT}`);
 });

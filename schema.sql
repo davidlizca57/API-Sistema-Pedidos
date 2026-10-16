@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS productos (
     descripcion TEXT,
     precio DECIMAL(10,2) NOT NULL,
     categoria VARCHAR(50) NOT NULL
+    stock INT DEFAULT 50
 );
 
 -- 3. TABLA DE PEDIDOS (Cabecera de transacciones conectada al cliente)

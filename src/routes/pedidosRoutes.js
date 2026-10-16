@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
 
-// Importamos el controlador de pedidos correcto
-const { crearPedidoCompleto } = require('../controllers/pedidosController');
+// Importación explícita del controlador y destructuración de los middlewares de seguridad
+const pedidosController = require('../controllers/pedidosController');
+const { verificarToken } = require('../middlewares/authMiddleware');
 
-//  Cambiamos a 'Middlewares' con M mayúscula para que coincida con tu VS Code
-const { verificarToken } = require('../Middlewares/authMiddleware');
-
-// El registro de pedidos requiere token obligatorio
-router.post('/pedidos', verificarToken, crearPedidoCompleto);
+// Definición de endpoints mapeados con validación de seguridad por token JWT
+router.get('/pedidos', verificarToken, pedidosController.obtenerHistorialPedidos);
+router.post('/pedidos', verificarToken, pedidosController.crearPedidoCompleto);
 
 module.exports = router;

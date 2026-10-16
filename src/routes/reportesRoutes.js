@@ -5,7 +5,7 @@ const router = express.Router();
 const { obtenerReporteVentas } = require('../controllers/reporteController');
 
 // Importamos los middlewares de seguridad desde la carpeta correcta
-const { verificarToken, autorizarRol } = require('../Middlewares/authMiddleware');
+const { verificarToken, autorizarRol } = require('../middlewares/authMiddleware');
 
 // Definimos la ruta del reporte (el prefijo /reportes se añade en app.js)
 router.get('/ventas', verificarToken, autorizarRol(['administrador']), obtenerReporteVentas);
