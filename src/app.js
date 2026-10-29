@@ -4,6 +4,7 @@ const productosRoutes = require('./routes/productosRoutes');
 const usuariosRoutes = require('./routes/usuariosRoutes');
 const pedidosRoutes = require('./routes/pedidosRoutes');
 const reportesRoutes = require('./routes/reportesRoutes');
+const recomendacionesRoutes = require('./routes/recomendacionesRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,7 @@ app.use('/api', productosRoutes);
 app.use('/api', usuariosRoutes);
 app.use('/api', pedidosRoutes);
 app.use('/api/reportes', reportesRoutes);
+app.use('/api', recomendacionesRoutes);
 
 // Middleware global centralizado para manejo de errores
 app.use((err, req, res, next) => {
