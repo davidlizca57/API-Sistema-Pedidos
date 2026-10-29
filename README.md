@@ -2,7 +2,7 @@
 
 Esolución de software Full-Stack integrada para la gestión de usuarios, autenticación segura y procesamiento relacional de comandas en tiempo real. Developed under a decoupled architecture (Backend API REST & Frontend SPA).
 
-## 🚀 Arquitectura y Tecnologías
+##  Arquitectura y Tecnologías
 - **Backend:** Node.js, Express, MySQL (Persistencia Relacional)
 - **Frontend:** React, Vite, JavaScript (Componentes Modulares y SPA)
 - **Seguridad:** Cifrado criptográfico de contraseñas mediante **Bcrypt**
@@ -67,3 +67,58 @@ Esolución de software Full-Stack integrada para la gestión de usuarios, autent
 
 ---
 *Proyecto formativo desarrollado por David Steban Lizcano Andrade para la competencia de Diseño y Desarrollo de Servicios Web - ADSO Sena.*
+
+
+## SIP-Suggest: prueba de concepto de recomendaciones (Machine Learning)
+
+Motor de sugerencias que, a partir de los productos del carrito, recomienda los 2 productos
+complementarios con mayor probabilidad de compra usando reglas de asociación (núcleo de Apriori, pares 1→1)
+sobre el histórico de `pedidos` y `detalles_pedidos`.
+
+### Archivos
+- `src/controllers/recomendacionesController.js`: validaciones y lógica del modelo.
+- `src/routes/recomendacionesRoutes.js`: ruta `POST /api/recomendaciones`.
+- `database/seed_pedidos_prueba.sql`: 51 pedidos ficticios, 3 productos extra y un usuario de prueba sin acceso.
+
+### Ejecución
+1. Crear la base con `schema.sql` y configurar el `.env` (ver `.env.example`).
+2. Ejecutar `database/seed_pedidos_prueba.sql` en MySQL.
+3. `npm install` y `node src/app.js` (puerto 3000).
+4. Probar con Postman.
+
+### Endpoint
+`POST /api/recomendaciones`
+
+Entrada:
+```json
+{ "usuario_id": 12, "productos": [3] }
+```
+Respuesta (resumida):
+```json
+{
+  "success": true,
+  "tipo": "asociacion",
+  "total_pedidos_analizados": 53,
+  "recomendaciones": [
+    { "id": 2, "nombre": "Pizza Pepperoni Personal", "confianza": 0.682, "lift": 2.008, "soporte": 0.283 },
+    { "id": 9, "nombre": "Brownie con Helado", "confianza": 0.364, "lift": 2.409, "soporte": 0.151 }
+  ]
+}
+```
+
+| Código | Causa |
+|---|---|
+| 400 | `usuario_id` no es entero positivo, `productos` vacío o con IDs inválidos, o más de 20 productos |
+| 404 | Usuario o producto inexistente |
+
+Si no hay reglas útiles (arranque en frío) devuelve `"tipo": "respaldo_mas_vendidos"`.
+
+### Limitaciones
+Datos de prueba ficticios, solo reglas de un producto hacia otro, el modelo se recalcula en cada petición
+y el endpoint aún no exige autenticación JWT.
+
+### Limpieza de datos de prueba
+```sql
+DELETE FROM pedidos WHERE estado = 'Prueba PoC';
+DELETE FROM usuarios WHERE correo = 'prueba.poc@example.com';
+```
