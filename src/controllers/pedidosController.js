@@ -6,8 +6,18 @@ const crearPedidoCompleto = async (req, res, next) => {
     const usuario_id = req.usuario.id;
     const { productos } = req.body; // 'productos' es un array de objetos [{ producto_id: 1, cantidad: 2 }]
 
-    if (!productos || productos.length === 0) {
+    if (!Array.isArray(productos) || productos.length === 0) {
         return res.status(400).json({ error: 'No se puede procesar un pedido sin ítems o productos' });
+    }
+
+    // VALIDACIÓN DE DATOS DE ENTRADA: cada ítem debe traer enteros positivos
+    for (const item of productos) {
+        if (!item || !Number.isInteger(item.producto_id) || item.producto_id <= 0) {
+            return res.status(400).json({ error: 'El producto_id de cada ítem debe ser un número entero positivo' });
+        }
+        if (!Number.isInteger(item.cantidad) || item.cantidad <= 0) {
+            return res.status(400).json({ error: 'La cantidad de cada producto debe ser un número entero mayor que cero' });
+        }
     }
 
     // Obtenemos una conexión limpia del pool para poder ejecutar la transacción manual

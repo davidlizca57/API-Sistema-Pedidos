@@ -2,7 +2,11 @@ const db = require('../config/db'); // Ajusta la ruta a tu conexión de base de 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'desbloquearsistema';
+// El secreto del token debe venir del archivo .env (ya no hay valor por defecto en el código)
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('Falta la variable JWT_SECRET en el archivo .env');
+}
 
 // 0. OBTENER TODOS LOS USUARIOS (GET)
 const obtenerUsuarios = async (req, res, next) => {
@@ -17,7 +21,8 @@ const obtenerUsuarios = async (req, res, next) => {
 
 // 0b. REGISTRAR UN NUEVO USUARIO CON CIFRADO DE CONTRASEÑA (POST)
 const registrarUsuario = async (req, res, next) => {
-    const { nombre, correo, password, rol } = req.body;
+    // El rol NO se toma de la solicitud: el registro público siempre crea clientes
+    const { nombre, correo, password } = req.body;
 
     try {
         // Validación básica de campos obligatorios
@@ -35,16 +40,16 @@ const registrarUsuario = async (req, res, next) => {
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
-        // Insertar el nuevo usuario en MySQL
+        // Insertar el nuevo usuario en MySQL con rol fijo "cliente"
         const [result] = await db.query(
             'INSERT INTO usuarios (nombre, correo, password, rol) VALUES (?, ?, ?, ?)',
-            [nombre, correo, passwordHash, rol || 'cliente']
+            [nombre, correo, passwordHash, 'cliente']
         );
 
         res.status(201).json({
             message: 'Usuario registrado con éxito',
             id: result.insertId,
-            usuario: { id: result.insertId, nombre, correo, rol: rol || 'cliente' }
+            usuario: { id: result.insertId, nombre, correo, rol: 'cliente' }
         });
 
     } catch (error) {
@@ -96,6 +101,7 @@ const loginUsuario = async (req, res, next) => {
 };
 
 // 2. ACTUALIZACIÓN DE USUARIO CON CIFRADO DE CONTRASEÑA OBLIGATORIO (PUT)
+// (la ruta exige token de administrador, por eso aquí sí se permite cambiar el rol)
 const actualizarUsuario = async (req, res, next) => {
     const { id } = req.params;
     const { nombre, correo, password, rol } = req.body;

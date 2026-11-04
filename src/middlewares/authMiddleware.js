@@ -1,5 +1,10 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'desbloquearsistema';
+
+// El secreto del token debe venir del archivo .env (ya no hay valor por defecto en el código)
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('Falta la variable JWT_SECRET en el archivo .env');
+}
 
 // Middleware de verificación de Token JWT
 const verificarToken = (req, res, next) => {
