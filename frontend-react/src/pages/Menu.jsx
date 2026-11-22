@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_URL from '../config/api';
 
 function Menu({ usuario }) {
   const [productos, setProductos] = useState([]);
@@ -6,7 +7,7 @@ function Menu({ usuario }) {
   const [mensajeExito, setMensajeExito] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/productos')
+    fetch(`${API_URL}/api/productos`)
       .then(res => res.json())
       .then(data => setProductos(data))
       .catch(err => console.error('Error cargando productos:', err));
@@ -14,8 +15,13 @@ function Menu({ usuario }) {
 
   const agregarAlCarrito = (prod) => {
     const existe = carrito.find(item => item.id === prod.id);
+
     if (existe) {
-      setCarrito(carrito.map(item => item.id === prod.id ? { ...item, cantidad: item.cantidad + 1 } : item));
+      setCarrito(carrito.map(item =>
+        item.id === prod.id
+          ? { ...item, cantidad: item.cantidad + 1 }
+          : item
+      ));
     } else {
       setCarrito([...carrito, { ...prod, cantidad: 1 }]);
     }
@@ -31,23 +37,23 @@ function Menu({ usuario }) {
     }).filter(Boolean));
   };
 
-  const total = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+  const total = carrito.reduce(
+    (sum, item) => sum + (item.precio * item.cantidad),
+    0
+  );
 
   const enviarPedido = async () => {
-    // 🔑 Rescatamos el token auténtico guardado durante el login
     const token = localStorage.getItem('token_autenticacion_sip');
 
     try {
-      const response = await fetch('http://localhost:3000/api/pedidos', {
+      const response = await fetch(`${API_URL}/api/pedidos`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          // 🔑 Inyectamos la llave de seguridad obligatoria
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           usuario_id: usuario.id,
-          // 🛡️ SOLUCIÓN PARA LA INSTRUCTORA: Ya no mandamos precios ni totales desde el frontend para evitar hackeos
           productos: carrito.map(item => ({
             producto_id: item.id,
             cantidad: item.cantidad
@@ -56,7 +62,7 @@ function Menu({ usuario }) {
       });
 
       if (response.ok) {
-        setMensajeExito('¡Pedido registrado con éxito mediante transacción atómica en MySQL!');
+        setMensajeExito('¡Pedido registrado con éxito!');
         setCarrito([]);
         setTimeout(() => setMensajeExito(''), 4000);
       } else {
@@ -71,14 +77,22 @@ function Menu({ usuario }) {
   return (
     <div className="menu-container">
       <div className="productos-seccion">
-        <h2>🍔 Nuestro Menú</h2>
+        <h2>🔔 Nuestro Menú</h2>
+
         <div className="grid-productos">
           {productos.map(prod => (
             <div key={prod.id} className="card-producto">
               <h4>{prod.nombre}</h4>
               <p>{prod.descripcion}</p>
-              <div className="precio">\${parseFloat(prod.precio).toLocaleString('es-CO')}</div>
-              <button onClick={() => agregarAlCarrito(prod)} className="btn-agregar">Añadir al Carrito</button>
+              <div className="precio">
+                ${parseFloat(prod.precio).toLocaleString('es-CO')}
+              </div>
+              <button
+                onClick={() => agregarAlCarrito(prod)}
+                className="btn-agregar"
+              >
+                Añadir al Carrito
+              </button>
             </div>
           ))}
         </div>
@@ -86,7 +100,11 @@ function Menu({ usuario }) {
 
       <div className="carrito-seccion">
         <h3>🛒 Tu Comanda Actual</h3>
-        {mensajeExito && <div className="exito-box">{mensajeExito}</div>}
+
+        {mensajeExito && (
+          <div className="exito-box">{mensajeExito}</div>
+        )}
+
         {carrito.length === 0 ? (
           <p>No hay ítems agregados.</p>
         ) : (
@@ -95,14 +113,27 @@ function Menu({ usuario }) {
               <div key={item.id} className="item-carrito">
                 <span>{item.nombre}</span>
                 <div>
-                  <button onClick={() => modificarCantidad(item.id, -1)}>-</button>
+                  <button onClick={() => modificarCantidad(item.id, -1)}>
+                    -
+                  </button>
                   <span>{item.cantidad}</span>
-                  <button onClick={() => modificarCantidad(item.id, 1)}>+</button>
+                  <button onClick={() => modificarCantidad(item.id, 1)}>
+                    +
+                  </button>
                 </div>
               </div>
             ))}
-            <h4>Total Estimado: \${total.toLocaleString('es-CO')}</h4>
-            <button onClick={enviarPedido} className="btn-confirmar">Enviar Orden Directa a BD</button>
+
+            <h4>
+              Total Estimado: ${total.toLocaleString('es-CO')}
+            </h4>
+
+            <button
+              onClick={enviarPedido}
+              className="btn-confirmar"
+            >
+              Enviar Orden Directa a BD
+            </button>
           </div>
         )}
       </div>
